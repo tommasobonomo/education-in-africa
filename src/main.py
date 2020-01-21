@@ -1,23 +1,13 @@
-import time
-import numpy as np
 import streamlit as st
+import altair as alt
+import pandas as pd
+from vega_datasets import data
 
-progress_bar = st.sidebar.progress(0)
-status_text = st.sidebar.empty()
-last_rows = np.random.randn(1, 1)
-chart = st.line_chart(last_rows)
+st.markdown('# Education in Africa')
 
-for i in range(1, 101):
-    new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-    status_text.text("%i%% Complete" % i)
-    chart.add_rows(new_rows)
-    progress_bar.progress(i)
-    last_rows = new_rows
-    time.sleep(0.05)
+source = alt.topo_feature(
+    'https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json', "continent_Africa_subunits")
 
-progress_bar.empty()
+chart = alt.Chart(source).mark_geoshape(fill='white', stroke='black')
 
-# Streamlit widgets automatically run the script from top to bottom. Since
-# this button is not connected to any other logic, it just causes a plain
-# rerun.
-st.button("Re-run")
+st.altair_chart(chart)
