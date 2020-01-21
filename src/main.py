@@ -1,23 +1,35 @@
 import time
 import numpy as np
 import streamlit as st
+import altair as alt
+import pandas as pd
 
-progress_bar = st.sidebar.progress(0)
-status_text = st.sidebar.empty()
-last_rows = np.random.randn(1, 1)
-chart = st.line_chart(last_rows)
+from vega_datasets import data
 
-for i in range(1, 101):
-    new_rows = last_rows[-1, :] + np.random.randn(5, 1).cumsum(axis=0)
-    status_text.text("%i%% Complete" % i)
-    chart.add_rows(new_rows)
-    progress_bar.progress(i)
-    last_rows = new_rows
-    time.sleep(0.05)
+source = data.wheat()
 
-progress_bar.empty()
+st.header("Data exploration")
+# st.subheader("by Mark")
 
-# Streamlit widgets automatically run the script from top to bottom. Since
-# this button is not connected to any other logic, it just causes a plain
-# rerun.
-st.button("Re-run")
+chart = alt.Chart(source).mark_bar().encode(
+    x='year:O',
+    y="wheat:Q",
+    # The highlight will be set on the result of a conditional statement
+    color=alt.condition(
+        alt.datum.year == 1810,  # If the year is 1810 this test returns True,
+        alt.value('orange'),     # which sets the bar orange.
+        alt.value('steelblue')   # And if it's not true it sets the bar steelblue.
+    )
+).properties(width=600)
+
+df = pd.DataFrame(
+     np.random.randn(200, 3),
+     columns=['a', 'b', 'c'])
+
+c = alt.Chart(df).mark_circle().encode(x='a', y='b', size='c', color='c')
+
+st.write(chart)
+st.write(c)
+
+mydf = pd.read_csv('../data/aggregate_data.csv')
+st.write(mydf.head())
