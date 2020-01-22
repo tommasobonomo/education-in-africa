@@ -8,7 +8,9 @@ from vega_datasets import data
 mydf = pd.read_csv('../data/aggregate_data.csv')
 
 mydf.columns = mydf.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
-ix = mydf.indicator_code.str.contains("EG.ELC.ACCS.RU.ZS")
+
+indicator = str(st.sidebar.selectbox("Economic indicator", ["EG.ELC.ACCS.RU.ZS", "SP.POP.DPND", "MS.MIL.MPRT.KD"]))
+ix = mydf.indicator_code.str.contains(indicator)
 mydf = mydf[ix]
 #st.write(mydf.head())
 
@@ -21,6 +23,10 @@ mydf = mydf.filter(items=["country_name", "1960","1961","1962","1963","1964","19
 mydf = mydf.melt(id_vars=["country_name"],
         var_name="Year",
         value_name="Value")
+
+
+
+#st.write(value)
 
 year_to_filter = st.slider('Year', 1960, 2019, 2004)  # min: 0h, max: 23h, default: 17h
 filtered_data = mydf[mydf.Year.str.contains(str(year_to_filter))]
