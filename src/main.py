@@ -19,7 +19,7 @@ ix = mydf.indicator_code.str.contains(indicator)
 mydf = mydf[ix]
 #st.write(mydf.head())
 
-mydf = mydf.filter(items=["country_name", "wb-2_code", "1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019"])
+mydf = mydf.filter(items=["country_name", "country_code", "wb-2_code", "1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019"])
 #st.write(mydf.head())
 
 col_one_list = mydf['wb-2_code'].tolist()
@@ -42,7 +42,7 @@ mydf['lon'] = list([float(i) for i in longs])
 # filter data one indicator one tear
 # for this country - value plot
 
-mydf = mydf.melt(id_vars=["country_name", "wb-2_code", "lat", "lon"],
+mydf = mydf.melt(id_vars=["country_name", "country_code", "wb-2_code", "lat", "lon"],
         var_name="Year",
         value_name="Value")
 
@@ -57,10 +57,26 @@ filtered_data = mydf[mydf.Year.str.contains(str(year_to_filter))]
 #st.map(filtered_data)
 
 
-# fp = "../data/Africa.shp"
-# map_df = gpd.read_file(fp)
-# map_df.head()
-# st.write(map_df.plot())
+fp = "../data/Africa.shp"
+map_df = gpd.read_file(fp)
+# st.write(map_df["CODE"])
+variable = "Value"
+
+merged = map_df.set_index("CODE").join(filtered_data.set_index('country_code'))
+# st.write(merged.keys())
+
+vmin = merged['Value'].min()
+vmax = merged['Value'].max()
+
+fig, ax = plt.subplots(1, figsize=(10, 6))
+merged.plot(column=variable, cmap="Blues", linewidth=0.8, ax=ax, edgecolor="0.8")
+ax.axis("off")
+sm = plt.cm.ScalarMappable(cmap='Blues', norm=plt.Normalize(vmin=vmin, vmax=vmax))
+sm._A = []
+cbar = fig.colorbar(sm)
+
+
+st.pyplot()
 
 
 #st.write(filtered_data.head())
