@@ -36,32 +36,60 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
     return df.melt(id_vars=identifying_vars, value_vars=years, var_name="Year")
 
 
-data = get_data(indicators_path="data/indicators/education.csv")
+def plot_choropleth() -> None:
+    data = get_data(indicators_path="data/indicators/education.csv")
+    # Only indicators for education with more than 40 data points in 2010:
+    # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
+    primary_duration = (
+        wide2long_format(data[data["Indicator Code"] == "SE.PRM.DURS"])
+        .dropna()
+        .reset_index(drop=True)
+    )
 
-# Only indicators for education with more than 40 data points in 2010:
-# ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
-primary_duration = (
-    wide2long_format(data[data["Indicator Code"] == "SE.PRM.DURS"])
-    .dropna()
-    .reset_index(drop=True)
-)
+    primary_duration_2010 = primary_duration[primary_duration["Year"] == "2010"]
 
-primary_duration_2010 = primary_duration[primary_duration["Year"] == "2010"]
+    st.markdown("# Education in Africa")
 
-st.markdown("# Education in Africa")
+    world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+    africa = world[world.continent == "Africa"]
+    africa_geometry = africa[["iso_a3", "geometry"]]
 
-world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-africa = world[world.continent == "Africa"]
-africa_geometry = africa[["iso_a3", "geometry"]]
+    source = pd.merge(
+        primary_duration_2010,
+        africa_geometry,
+        left_on="Country Code",
+        right_on="iso_a3",
+        how="left",
+    )
+    geo_source = gpd.GeoDataFrame(source, geometry="geometry")
+    chart = alt.Chart(geo_source).mark_geoshape().encode(color="value:O")
+    st.altair_chart(chart)
 
 
-source = pd.merge(
-    primary_duration_2010,
-    africa_geometry,
-    left_on="Country Code",
-    right_on="iso_a3",
-    how="left",
-)
-geo_source = gpd.GeoDataFrame(source, geometry="geometry")
-chart = alt.Chart(geo_source).mark_geoshape().encode(color="value:O")
-st.altair_chart(chart)
+def plot_scatter():
+    ed_data = get_data(indicators_path="data/indicators/education.csv")
+    ed_data = wide2long_format(ed_data).dropna()
+
+    top_ed_indicators = ed_data["Indicator Code"].value_counts()[:10].index
+    ed_data = ed_data[ed_data["Indicator Code"].isin(top_ed_indicators)]
+
+    ed_indicator = st.selectbox(
+        label="Education Indicator", options=ed_data["Indicator Code"].unique()
+    )
+    indicator_data = ed_data[ed_data["Indicator Code"] == ed_indicator]
+    year = str(st.slider(label="Year of interest", min_value=1970, max_value=2019))
+    # year = st.selectbox(
+    #     label="Year of interest", options=indicator_data["Year"].unique()
+    # )
+    final_ed_data = indicator_data[indicator_data["Year"] == year]
+    st.write(final_ed_data)
+
+
+option = st.selectbox("Plot to render", ["scatter", "map"])
+
+if option == "scatter":
+    plot_scatter()
+elif option == "map":
+    plot_choropleth()
+else:
+    st.write("### Sorry! Plot not yet implemented")
