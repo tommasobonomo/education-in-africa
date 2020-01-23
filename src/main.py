@@ -3,9 +3,14 @@ import numpy as np
 import streamlit as st
 import altair as alt
 import pandas as pd
+import json
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import pydeck as pdk
+
 
 from vega_datasets import data
-mydf = pd.read_csv('../data/aggregate_data.csv')
+mydf = pd.read_csv('../data/african_data.csv')
 
 mydf.columns = mydf.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
 
@@ -14,22 +19,49 @@ ix = mydf.indicator_code.str.contains(indicator)
 mydf = mydf[ix]
 #st.write(mydf.head())
 
-mydf = mydf.filter(items=["country_name", "1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019"])
+mydf = mydf.filter(items=["country_name", "wb-2_code", "1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019"])
 #st.write(mydf.head())
+
+col_one_list = mydf['wb-2_code'].tolist()
+#st.write(mydf.shape)
+#st.write(len(col_one_list))
+
+lats = []
+longs = []
+
+with open ("country_to_latlong.json", "r") as myfile:
+    data = json.load(myfile)
+    for item in col_one_list:
+        lats.append(data[str(item).lower()][0])
+        longs.append(data[str(item).lower()][1])
+
+mydf['lat'] = list([float(i) for i in lats])
+mydf['lon'] = list([float(i) for i in longs])
+
 
 # filter data one indicator one tear
 # for this country - value plot
 
-mydf = mydf.melt(id_vars=["country_name"],
+mydf = mydf.melt(id_vars=["country_name", "wb-2_code", "lat", "lon"],
         var_name="Year",
         value_name="Value")
 
 
 
-#st.write(value)
+#st.write(mydf.head())
 
 year_to_filter = st.slider('Year', 1960, 2019, 2004)  # min: 0h, max: 23h, default: 17h
 filtered_data = mydf[mydf.Year.str.contains(str(year_to_filter))]
+
+#st.write(filtered_data.head())
+#st.map(filtered_data)
+
+
+# fp = "../data/Africa.shp"
+# map_df = gpd.read_file(fp)
+# map_df.head()
+# st.write(map_df.plot())
+
 
 #st.write(filtered_data.head())
 bars = alt.Chart(filtered_data).mark_bar().encode(
@@ -47,6 +79,27 @@ text = bars.mark_text(
 )
 
 (bars + text).properties(height=900)
+
+geodata = filtered_data.filter(items=["lat","lon"])
+
+st.pydeck_chart(pdk.Deck(
+    map_style='mapbox://styles/mapbox/light-v9',
+    initial_view_state=pdk.ViewState(
+        latitude=0,
+        longitude=20,
+        zoom=2,
+        pitch=0,
+    ),
+    layers=[
+        pdk.Layer(
+            'ScatterplotLayer',
+            data=geodata,
+            get_position='[lon, lat]',
+            get_color='[200, 30, 0, 160]',
+            get_radius=200000,
+        ),
+    ],
+))
 
 st.subheader(f'Some value in year {year_to_filter}')
 st.write(bars)
@@ -86,6 +139,10 @@ filtered_data = data[data[DATE_COLUMN].dt.hour == hour_to_filter]
 st.subheader(f'Map of all pickups at {hour_to_filter}:00')
 st.map(filtered_data)
 
+# df = pd.DataFrame(
+#     np.random.randn(1000, 2) / [50, 50] + [37.76, -122.4],
+#     columns=['lat', 'lon'])
+# st.map(df)
 
 
 
