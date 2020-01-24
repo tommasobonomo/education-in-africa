@@ -1,0 +1,21 @@
+Indicator Name,Indicator Code
+"Women participating in the three decisions (own health care, major household purchases, and visiting family) (% of women age 15-49)",SG.DMK.ALLD.FN.ZS
+"Women making their own informed decisions regarding sexual relations, contraceptive use and reproductive health care  (% of women age 15-49)",SG.DMK.SRCR.FN.ZS
+Proportion of seats held by women in national parliaments (%),SG.GEN.PARL.ZS
+Nonpregnant and nonnursing women can do the same jobs as men (1=yes; 0=no),SG.JOB.NOPN.EQ
+Law prohibits or invalidates child or early marriage (1=yes; 0=no),SG.LAW.CHMR
+Law mandates equal remuneration for females and males for work of equal value (1=yes; 0=no),SG.LAW.EQRM.WK
+Law mandates paid or unpaid maternity leave (1=yes; 0=no),SG.LAW.LEVE.PU
+Law mandates nondiscrimination based on gender in hiring (1=yes; 0=no),SG.LAW.NODC.HR
+Legislation exists on domestic violence (1=yes; 0=no),SG.LEG.DVAW
+Mothers are guaranteed an equivalent position after maternity leave (1=yes; 0=no),SG.MMR.LEVE.EP
+Nondiscrimination clause mentions gender in the constitution (1=yes; 0=no),SG.NOD.CONS
+"Proportion of time spent on unpaid domestic and care work, female (% of 24 hour day)",SG.TIM.UWRK.FE
+"Proportion of time spent on unpaid domestic and care work, male (% of 24 hour day)",SG.TIM.UWRK.MA
+Proportion of women subjected to physical and/or sexual violence in the last 12 months (% of women age 15-49),SG.VAW.1549.ZS
+Women who believe a husband is justified in beating his wife when she argues with him (%),SG.VAW.ARGU.ZS
+Women who believe a husband is justified in beating his wife when she burns the food (%),SG.VAW.BURN.ZS
+Women who believe a husband is justified in beating his wife when she goes out without telling him (%),SG.VAW.GOES.ZS
+Women who believe a husband is justified in beating his wife when she neglects the children (%),SG.VAW.NEGL.ZS
+Women who believe a husband is justified in beating his wife (any of five reasons) (%),SG.VAW.REAS.ZS
+Women who believe a husband is justified in beating his wife when she refuses sex with him (%),SG.VAW.REFU.ZS
