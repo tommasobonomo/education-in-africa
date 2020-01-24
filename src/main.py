@@ -1,14 +1,8 @@
-import time
-import numpy as np
-import streamlit as st
+import json
+
 import altair as alt
 import pandas as pd
-import json
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from vega_datasets import data as usdata
-import pydeck as pdk
-
+import streamlit as st
 
 full_data = pd.read_csv('../data/african_data.csv')
 
@@ -31,48 +25,15 @@ with open ("country_to_latlong.json", "r") as myfile:
 mydf['lat'] = list([float(i) for i in lats])
 mydf['lon'] = list([float(i) for i in longs])
 
-
-# filter data one indicator one tear
-# for this country - value plot
-
 mydf = mydf.melt(id_vars=["country_name", "country_code", "wb-2_code", "lat", "lon"],
         var_name="Year",
         value_name="Value")
 
-
-
-#st.write(mydf.head())
-
 year_to_filter = st.slider('Year', 1960, 2019, 2004)  # min: 0h, max: 23h, default: 17h
 filtered_data = mydf[mydf.Year.str.contains(str(year_to_filter))]
 
-#st.write(filtered_data.head())
-#st.map(filtered_data)
-
-#
-# fp = "../data/Africa.shp"
-# map_df = gpd.read_file(fp)
-# # st.write(map_df["CODE"])
-# variable = "Value"
-#
-# merged = map_df.set_index("CODE").join(filtered_data.set_index('country_code'))
-# # st.write(merged.keys())
-#
-# vmin = merged['Value'].min()
-# vmax = merged['Value'].max()
-#
-# fig, ax = plt.subplots(1, figsize=(10, 6))
-# merged.plot(column=variable, cmap="Blues", linewidth=0.8, ax=ax, edgecolor="0.8")
-# ax.axis("off")
-# sm = plt.cm.ScalarMappable(cmap='Blues', norm=plt.Normalize(vmin=vmin, vmax=vmax))
-# sm._A = []
-# cbar = fig.colorbar(sm)
-#
-#
-# st.pyplot()
-
 african_countries = alt.topo_feature('https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json', 'continent_Africa_subunits')
-mychart2 = alt.Chart(african_countries).mark_geoshape().encode(
+africa_chart = alt.Chart(african_countries).mark_geoshape().encode(
     color='Value:Q'
 ).transform_lookup(
     lookup='properties.geounit',
@@ -83,14 +44,11 @@ mychart2 = alt.Chart(african_countries).mark_geoshape().encode(
     height=500
 )
 
-st.write(mychart2)
+st.write(africa_chart)
 
-
-#st.write(filtered_data.head())
 bars = alt.Chart(filtered_data).mark_bar().encode(
     x="Value:Q",
     y='country_name:O'
-
 )
 
 text = bars.mark_text(
@@ -102,31 +60,9 @@ text = bars.mark_text(
 )
 
 (bars + text).properties(height=900)
-#
-# geodata = filtered_data.filter(items=["lat","lon"])
-#
-# st.pydeck_chart(pdk.Deck(
-#     map_style='mapbox://styles/mapbox/light-v9',
-#     initial_view_state=pdk.ViewState(
-#         latitude=0,
-#         longitude=20,
-#         zoom=2,
-#         pitch=0,
-#     ),
-#     layers=[
-#         pdk.Layer(
-#             'ScatterplotLayer',
-#             data=geodata,
-#             get_position='[lon, lat]',
-#             get_color='[200, 30, 0, 160]',
-#             get_radius=200000,
-#         ),
-#     ],
-# ))
 
 st.subheader(f'Some value in year {year_to_filter}')
 st.write(bars)
-
 
 corr1_indicator = str(st.sidebar.selectbox("Corr 1", ["EG.ELC.ACCS.RU.ZS", "SP.POP.DPND", "MS.MIL.MPRT.KD"]))
 corr1 = full_data[full_data['indicator_code'] == corr1_indicator]
