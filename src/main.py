@@ -34,7 +34,9 @@ filtered_data = mydf[mydf.Year.str.contains(str(year_to_filter))]
 
 african_countries = alt.topo_feature('https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json', 'continent_Africa_subunits')
 africa_chart = alt.Chart(african_countries).mark_geoshape().encode(
-    color='Value:Q'
+    color='Value:Q',
+    tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
+             alt.Tooltip('Value:Q', title=indicator)],
 ).transform_lookup(
     lookup='properties.geounit',
     default='0',
