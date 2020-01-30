@@ -40,28 +40,33 @@ def plot_choropleth() -> None:
     data = get_data(indicators_path="data/indicators/education.csv")
     # Only indicators for education with more than 40 data points in 2010:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
-    primary_duration = (
-        wide2long_format(data[data["Indicator Code"] == "SE.PRM.DURS"])
+    indicator = "SE.PRM.DURS"
+    data = (
+        wide2long_format(data[data["Indicator Code"] == indicator])
         .dropna()
         .reset_index(drop=True)
     )
 
-    primary_duration_2010 = primary_duration[primary_duration["Year"] == "2010"]
+    year_to_filter = st.slider('Year', 1960, 2019, 2004)  # min: 0h, max: 23h, default: 17h
+    filtered_data = data[data.Year.str.contains(str(year_to_filter))]
 
-    world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
-    africa = world[world.continent == "Africa"]
-    africa_geometry = africa[["iso_a3", "geometry"]]
-
-    source = pd.merge(
-        primary_duration_2010,
-        africa_geometry,
-        left_on="Country Code",
-        right_on="iso_a3",
-        how="left",
+    african_countries = alt.topo_feature(
+        'https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json',
+        'continent_Africa_subunits')
+    africa_chart = alt.Chart(african_countries).mark_geoshape().encode(
+        color='value:Q',
+        tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
+                 alt.Tooltip('value:Q', title=indicator)],
+    ).transform_lookup(
+        lookup='properties.geounit',
+        default='0',
+        from_=alt.LookupData(filtered_data, 'Country Name', ['value'])
+    ).properties(
+        width=800,
+        height=500
     )
-    geo_source = gpd.GeoDataFrame(source, geometry="geometry")
-    chart = alt.Chart(geo_source).mark_geoshape().encode(color="value:O")
-    st.altair_chart(chart)
+
+    st.write(africa_chart)
 
 
 def plot_scatter():
