@@ -76,14 +76,18 @@ def plot_scatter():
 
     women_data = get_data(indicators_path="data/indicators/women.csv")
     women_data = wide2long_format(women_data).dropna()
-    top_women_indicators = women_data["Indicator Name"].value_counts()[:10].index
-    women_data = women_data[women_data["Indicator Name"].isin(top_women_indicators)]
+    top_women_indicators = women_data["Indicator Name"].value_counts()[
+        :10].index
+    women_data = women_data[women_data["Indicator Name"].isin(
+        top_women_indicators)]
     women_indicator = st.selectbox(
         label="Women's rights Indicator", options=women_data["Indicator Name"].unique()
     )
-    women_indicator_data = women_data[women_data["Indicator Name"] == women_indicator]
+    women_indicator_data = women_data[women_data["Indicator Name"]
+                                      == women_indicator]
 
-    year = str(st.slider(label="Year of interest", min_value=1970, max_value=2019))
+    year = str(st.slider(label="Year of interest",
+                         min_value=1970, max_value=2019))
     # year = st.selectbox(
     #     label="Year of interest", options=ed_indicator_data["Year"].unique()
     # )
