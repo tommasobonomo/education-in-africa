@@ -1,7 +1,6 @@
-import streamlit as st
 import altair as alt
 import pandas as pd
-import geopandas as gpd
+import streamlit as st
 
 
 @st.cache
@@ -43,7 +42,7 @@ def plot_choropleth() -> None:
     top_ed_indicators = data["Indicator Name"].value_counts()[:10].index
     data = data[data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
-        label="Education Indicator", options=data["Indicator Name"].unique()
+        label="Education Indicator", options=data["Indicator Name"].unique(), index=7
     )
 
     olddata = data[data["Indicator Name"] == ed_indicator]
@@ -57,47 +56,47 @@ def plot_choropleth() -> None:
     filtered_data = data[data.Year.str.contains(str(year_to_filter))]
 
     selection = alt.selection_multi(fields=['properties.geounit'])
-    color = alt.condition(selection, alt.Color('value:Q'), alt.value('lightgray'))
-    color2 = alt.condition(selection, alt.Color('properties.geounit:N'), alt.value('lightgray'))
+
+    color_scheme = st.sidebar.selectbox("Color scheme", ["yellowgreenblue", "greens", 'yellowgreen', 'redpurple', 'goldgreen'], index=4)
+    color = alt.condition(selection, alt.Color('value:Q', scale=alt.Scale(scheme=color_scheme), legend=alt.Legend(title='Indicator value')), alt.value('lightgray'))
 
     african_countries = alt.topo_feature(
         'https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json',
         'continent_Africa_subunits')
     africa_chart = alt.Chart(african_countries).mark_geoshape(
-        # fill='lightgray',
         stroke='white',
         strokeWidth=2
     ).encode(
         color=color,
         tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
-                 alt.Tooltip('value:Q', title=ed_indicator)],
+                 alt.Tooltip('value:Q', title='Indicator value')],
     ).transform_lookup(
         lookup='properties.geounit',
         default='0',
         from_=alt.LookupData(filtered_data, 'Country Name', ['value'])
     ).properties(
-        width=700,
-        height=600
+        width=600,
+        height=500
     ).add_selection(
         selection
     )
-
-    # st.write(data)
 
     columns = [str(year) for year in range(max(year_to_filter-5, 1960), min(year_to_filter+6, 2019))]
 
     trends = alt.Chart(african_countries).mark_line(point=True).encode(
         x='Year:O',
-        y='value:Q',
-        color='properties.geounit:N'
+        y=alt.Y('value:Q', title='Indicator value'),
+        color=alt.Color('properties.geounit:N', legend=alt.Legend(title='Selected Country')),
+        tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
+                 alt.Tooltip('value:Q', title='Indicator value')],
     ).transform_lookup(
         lookup='properties.geounit',
         from_=alt.LookupData(olddata, 'Country Name', columns)
     ).transform_fold(
         columns, as_=['Year', 'value']
     ).properties(
-        width=700,
-        height=600
+        width=600,
+        height=500
     ).transform_filter(
         selection
     )
@@ -111,7 +110,7 @@ def plot_scatter():
     top_ed_indicators = ed_data["Indicator Name"].value_counts()[:10].index
     ed_data = ed_data[ed_data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
-        label="Education Indicator", options=ed_data["Indicator Name"].unique()
+        label="Education Indicator", options=ed_data["Indicator Name"].unique(), index=6
     )
     ed_indicator_data = ed_data[ed_data["Indicator Name"] == ed_indicator]
 
@@ -124,11 +123,9 @@ def plot_scatter():
     women_indicator = st.selectbox(
         label="Women's rights Indicator", options=women_data["Indicator Name"].unique()
     )
-    women_indicator_data = women_data[women_data["Indicator Name"]
-                                      == women_indicator]
+    women_indicator_data = women_data[women_data["Indicator Name"] == women_indicator]
 
-    year = str(st.slider(label="Year of interest",
-                         min_value=1970, max_value=2019))
+    year = str(st.slider("Year of interest", 1970, 2019, 2010))
     # year = st.selectbox(
     #     label="Year of interest", options=ed_indicator_data["Year"].unique()
     # )
@@ -148,6 +145,9 @@ def plot_scatter():
             1.0,
         }
         type_women = "ordinal" if women_is_ordinal else "quantitative"
+
+        brush = alt.selection_interval()  # selection of type "interval"
+        color = alt.condition(brush, alt.value('teal'), alt.value('lightgray'))
         chart = (
             alt.Chart(plot_data)
             .mark_point()
@@ -155,16 +155,30 @@ def plot_scatter():
                 x=alt.X("value_women", title=women_indicator, type=type_women),
                 y=alt.Y("value_education", title=ed_indicator),
                 tooltip="Country Name",
+                # color=color
             )
-            .properties(height=400, width=600)
+            # .add_selection(brush)
+            .properties(height=600, width=600)
         )
-        st.altair_chart(chart)
+        # Define the degree of the polynomial fits
+        degree_list = [1]
+
+        polynomial_fit = [
+            chart.transform_regression(
+                "value_women", "value_education", method="poly", order=order, as_=["value_women", str(order)]
+            )
+                .mark_line()
+                .transform_fold([str(order)], as_=["degree", "value_education"])
+                .encode(color=alt.value('orange'))
+            for order in degree_list
+        ]
+
+        st.write(alt.layer(chart, *polynomial_fit))
     else:
         st.markdown("### No data for that year!")
 
-
 st.markdown("# Education in Africa")
-option = st.selectbox("Plot to render", ["map", "scatter"])
+option = st.sidebar.selectbox("Plot to render", ['map', 'scatter'])
 
 if option == "scatter":
     plot_scatter()
