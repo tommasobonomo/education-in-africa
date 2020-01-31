@@ -155,25 +155,17 @@ def plot_scatter():
                 x=alt.X("value_women", title=women_indicator, type=type_women),
                 y=alt.Y("value_education", title=ed_indicator),
                 tooltip="Country Name",
-                # color=color
+                color=color
             )
-            # .add_selection(brush)
             .properties(height=600, width=600)
         )
-        # Define the degree of the polynomial fits
-        degree_list = [1]
 
-        polynomial_fit = [
-            chart.transform_regression(
-                "value_women", "value_education", method="poly", order=order, as_=["value_women", str(order)]
-            )
-                .mark_line()
-                .transform_fold([str(order)], as_=["degree", "value_education"])
-                .encode(color=alt.value('orange'))
-            for order in degree_list
-        ]
+        polynomial_fit = chart.transform_regression(
+                "value_women", "value_education", method="poly", order=1
+        ).mark_line(
+        ).encode(color=alt.value('darkorange'))
 
-        st.write(alt.layer(chart, *polynomial_fit))
+        st.write(alt.vconcat(chart.add_selection(brush) + polynomial_fit))
     else:
         st.markdown("### No data for that year!")
 
