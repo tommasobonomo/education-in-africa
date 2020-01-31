@@ -40,33 +40,69 @@ def plot_choropleth() -> None:
     data = get_data(indicators_path="data/indicators/education.csv")
     # Only indicators for education with more than 40 data points in 2010:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
-    indicator = "SE.PRM.DURS"
+    top_ed_indicators = data["Indicator Name"].value_counts()[:10].index
+    data = data[data["Indicator Name"].isin(top_ed_indicators)]
+    ed_indicator = st.selectbox(
+        label="Education Indicator", options=data["Indicator Name"].unique()
+    )
+
+    olddata = data[data["Indicator Name"] == ed_indicator]
     data = (
-        wide2long_format(data[data["Indicator Code"] == indicator])
+        wide2long_format(data[data["Indicator Name"] == ed_indicator])
         .dropna()
         .reset_index(drop=True)
     )
 
-    year_to_filter = st.slider('Year', 1960, 2019, 2004)  # min: 0h, max: 23h, default: 17h
+    year_to_filter = st.slider('Year', 1960, 2019, 2010)  # min: 0h, max: 23h, default: 17h
     filtered_data = data[data.Year.str.contains(str(year_to_filter))]
+
+    selection = alt.selection_multi(fields=['properties.geounit'])
+    color = alt.condition(selection, alt.Color('value:Q'), alt.value('lightgray'))
+    color2 = alt.condition(selection, alt.Color('properties.geounit:N'), alt.value('lightgray'))
 
     african_countries = alt.topo_feature(
         'https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json',
         'continent_Africa_subunits')
-    africa_chart = alt.Chart(african_countries).mark_geoshape().encode(
-        color='value:Q',
+    africa_chart = alt.Chart(african_countries).mark_geoshape(
+        # fill='lightgray',
+        stroke='white',
+        strokeWidth=2
+    ).encode(
+        color=color,
         tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
-                 alt.Tooltip('value:Q', title=indicator)],
+                 alt.Tooltip('value:Q', title=ed_indicator)],
     ).transform_lookup(
         lookup='properties.geounit',
         default='0',
         from_=alt.LookupData(filtered_data, 'Country Name', ['value'])
     ).properties(
-        width=800,
-        height=500
+        width=700,
+        height=600
+    ).add_selection(
+        selection
     )
 
-    st.write(africa_chart)
+    # st.write(data)
+
+    columns = [str(year) for year in range(max(year_to_filter-5, 1960), min(year_to_filter+6, 2019))]
+
+    trends = alt.Chart(african_countries).mark_line(point=True).encode(
+        x='Year:O',
+        y='value:Q',
+        color='properties.geounit:N'
+    ).transform_lookup(
+        lookup='properties.geounit',
+        from_=alt.LookupData(olddata, 'Country Name', columns)
+    ).transform_fold(
+        columns, as_=['Year', 'value']
+    ).properties(
+        width=700,
+        height=600
+    ).transform_filter(
+        selection
+    )
+
+    st.write(africa_chart & trends)
 
 
 def plot_scatter():
@@ -128,7 +164,7 @@ def plot_scatter():
 
 
 st.markdown("# Education in Africa")
-option = st.selectbox("Plot to render", ["scatter", "map"])
+option = st.selectbox("Plot to render", ["map", "scatter"])
 
 if option == "scatter":
     plot_scatter()
