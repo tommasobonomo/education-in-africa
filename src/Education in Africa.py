@@ -60,8 +60,34 @@ def plot_choropleth() -> None:
 
     color_scheme = st.sidebar.selectbox("Color scheme", [
                                         "yellowgreenblue", "greens", 'yellowgreen', 'redpurple', 'goldgreen'], index=4)
+    # We are coloring states with value 0, that's bad
     color = alt.condition(selection, alt.Color('value:Q', scale=alt.Scale(
         scheme=color_scheme), legend=alt.Legend(title='Indicator value')), alt.value('lightgray'))
+
+    # The lookup isn't working because name in json and name in data do not match (i.e. Egypt and Egypt, Arab Rep.)
+    # Workaround: change names in data to match json, or get better json with ISO-3 code and match on that with data
+    with open("data/africa.geo.json") as f:
+        raw_json = f.read()
+    african_countries = alt.Data(
+        values=raw_json, format=alt.DataFormat(property="features", type="json"))
+    africa_chart = alt.Chart(african_countries).mark_geoshape(
+        stroke='white',
+        strokeWidth=2
+    ).encode(
+        color=color,
+        tooltip=[alt.Tooltip('properties.geounit:O', title='Country name'),
+                 alt.Tooltip('value:Q', title='Indicator value')],
+    ).transform_lookup(
+        lookup='properties.iso_a3',
+        default='0',
+        from_=alt.LookupData(filtered_data, 'Country Code', ['value'])
+    ).properties(
+        width=600,
+        height=500
+    ).add_selection(
+        selection
+    )
+    # Rubbish streamlit has some issues with this, my god
 
     african_countries = alt.topo_feature(
         'https://raw.githubusercontent.com/deldersveld/topojson/master/continents/africa.json',
