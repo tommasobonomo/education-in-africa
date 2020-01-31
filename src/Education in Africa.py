@@ -171,7 +171,7 @@ def plot_scatter():
         chart_base = (
             alt.Chart(plot_data)
             .mark_point(size=80)
-            .properties(height=400, width=400)
+            .properties(height=400, width=600)
         )
         chart = chart_base.encode(
                 x=alt.X("value_women", title=women_indicator, type=type_women),
@@ -197,9 +197,9 @@ def plot_scatter():
 
         b = st.checkbox(label="Show correlation line", value=True, key=None)
         if b:
-            st.write(alt.vconcat(chart.add_selection(brush) + polynomial_fit) | alt.vconcat(chart2.add_selection(brush) + polynomial_fit2))
+            st.altair_chart(alt.vconcat(chart.add_selection(brush) + polynomial_fit) & alt.vconcat(chart2.add_selection(brush) + polynomial_fit2))
         else:
-            st.write(alt.vconcat(chart.add_selection(brush)) | alt.vconcat(chart2.add_selection(brush)))
+            st.altair_chart(alt.vconcat(chart.add_selection(brush)) & alt.vconcat(chart2.add_selection(brush)))
     else:
         st.markdown("### No data for that year!")
 
