@@ -125,12 +125,23 @@ def plot_scatter():
     )
     women_indicator_data = women_data[women_data["Indicator Name"] == women_indicator]
 
+    eco_data = get_data(indicators_path="data/indicators/economics.csv")
+    eco_data = wide2long_format(eco_data).dropna()
+    top_eco_indicators = eco_data["Indicator Name"].value_counts()[:10].index
+    eco_data = eco_data[eco_data["Indicator Name"].isin(top_eco_indicators)]
+    eco_indicator = st.selectbox(
+        label="Economic Indicator", options=eco_data["Indicator Name"].unique(), index=6
+    )
+    eco_indicator_data = eco_data[eco_data["Indicator Name"] == eco_indicator]
+
     year = str(st.slider("Year of interest", 1970, 2019, 2010))
     # year = st.selectbox(
     #     label="Year of interest", options=ed_indicator_data["Year"].unique()
     # )
     final_ed_data = ed_indicator_data[ed_indicator_data["Year"] == year]
     final_women_data = women_indicator_data[women_indicator_data["Year"] == year]
+    final_eco_data = eco_indicator_data[eco_indicator_data["Year"] == year]
+
     columns = ["Country Code", "Country Name", "value"]
     plot_data = pd.merge(
         final_women_data[columns],
@@ -138,6 +149,15 @@ def plot_scatter():
         on=["Country Code", "Country Name"],
         suffixes=("_women", "_education"),
     )
+
+    columns = ["Country Code", "Country Name", "value"]
+
+    plot_data = pd.merge(
+        plot_data,
+        final_eco_data[columns],
+        on=["Country Code", "Country Name"],
+    )
+    plot_data.rename(columns={"value": "value_eco"}, inplace=True)
 
     if not plot_data.empty:
         women_is_ordinal = set(final_women_data["value"].unique().tolist()) == {
@@ -148,33 +168,43 @@ def plot_scatter():
 
         brush = alt.selection_interval()  # selection of type "interval"
         color = alt.condition(brush, alt.value('teal'), alt.value('lightgray'))
-        chart = (
+        chart_base = (
             alt.Chart(plot_data)
             .mark_point(size=80)
-            .encode(
+            .properties(height=400, width=400)
+        )
+        chart = chart_base.encode(
                 x=alt.X("value_women", title=women_indicator, type=type_women),
                 y=alt.Y("value_education", title=ed_indicator),
                 tooltip="Country Name",
                 color=color
             )
-            .properties(height=600, width=600)
+        chart2 = chart_base.encode(
+            x=alt.X("value_eco", title=eco_indicator, type=type_women),
+            y=alt.Y("value_education", title=ed_indicator),
+            tooltip="Country Name",
+            color=color
         )
 
         polynomial_fit = chart.transform_regression(
                 "value_women", "value_education", method="poly", order=1
         ).mark_line(
         ).encode(color=alt.value('darkorange'))
+        polynomial_fit2 = chart2.transform_regression(
+            "value_eco", "value_education", method="poly", order=1
+        ).mark_line(
+        ).encode(color=alt.value('darkorange'))
 
         b = st.checkbox(label="Show correlation line", value=True, key=None)
         if b:
-            st.write(alt.vconcat(chart.add_selection(brush) + polynomial_fit))
+            st.write(alt.vconcat(chart.add_selection(brush) + polynomial_fit) | alt.vconcat(chart2.add_selection(brush) + polynomial_fit2))
         else:
-            st.write(alt.vconcat(chart.add_selection(brush)))
+            st.write(alt.vconcat(chart.add_selection(brush)) | alt.vconcat(chart2.add_selection(brush)))
     else:
         st.markdown("### No data for that year!")
 
 st.markdown("# Education in Africa")
-option = st.sidebar.selectbox("Plot to render", ['map', 'scatter'])
+option = st.sidebar.selectbox("Plot to render", ['scatter', 'map'])
 
 if option == "scatter":
     plot_scatter()
