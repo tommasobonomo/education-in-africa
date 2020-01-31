@@ -150,7 +150,7 @@ def plot_scatter():
         color = alt.condition(brush, alt.value('teal'), alt.value('lightgray'))
         chart = (
             alt.Chart(plot_data)
-            .mark_point()
+            .mark_point(size=80)
             .encode(
                 x=alt.X("value_women", title=women_indicator, type=type_women),
                 y=alt.Y("value_education", title=ed_indicator),
