@@ -90,8 +90,11 @@ def plot_choropleth() -> None:
         )
         .transform_lookup(
             lookup="properties.geounit",
-            from_=alt.LookupData(filtered_data, "Geo Name", ["value", "Country Code"]),
+            from_=alt.LookupData(
+                filtered_data, key="Geo Name", fields=["value", "Country Code"]
+            ),
         )
+        .transform_filter(alt.datum["Country Code"] != None)
         .add_selection(map_selection)
     )
 
