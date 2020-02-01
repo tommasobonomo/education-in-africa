@@ -57,6 +57,10 @@ def plot_choropleth() -> None:
     year_to_filter = st.slider("Year", 1960, 2019, 2010)
     filtered_data = data[data.Year.str.contains(str(year_to_filter))]
 
+    if filtered_data.empty:
+        st.markdown("### No data available for that year!")
+        return
+
     color_scheme = st.sidebar.selectbox(
         "Color scheme",
         ["yellowgreenblue", "greens", "yellowgreen", "redpurple", "goldgreen"],
