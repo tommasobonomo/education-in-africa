@@ -39,9 +39,11 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
 def plot_choropleth() -> None:
     data = get_data(indicators_path="data/indicators/education.csv")
     metadata = pd.read_csv("data/indicators/indicator_metadata.csv")
+    handpicked_indicators = pd.read_csv("data/indicators/education_handpicked.csv")
+
     # Only indicators for education with more than 40 data points in 2010:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
-    top_ed_indicators = data["Indicator Name"].value_counts()[:10].index
+    top_ed_indicators = handpicked_indicators["Indicator Name"]
     data = data[data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
         label="Education Indicator", options=data["Indicator Name"].unique(), index=7
@@ -50,7 +52,8 @@ def plot_choropleth() -> None:
     indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
     info = st.checkbox("info", value=True)
     if info:
-        st.markdown("***Short definition: *** *" + str(indicator_metadata['Short definition'].item()) + "*")
+        # st.write(ed_indicator)
+        # st.markdown("***Short definition: *** *" + str(indicator_metadata['Short definition'].item()) + "*")
         st.markdown("***Long definition: *** *" + str(indicator_metadata['Long definition'].item()) + "*")
 
     olddata = data[data["Indicator Name"] == ed_indicator]
