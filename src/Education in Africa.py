@@ -37,16 +37,26 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_choropleth() -> None:
-    data = get_data(indicators_path="data/indicators/education.csv")
+    category = st.sidebar.selectbox("Data to visualize", ["Education", "Women's rights", "Economy"])
+    st.markdown("# "+category+" in Africa")
+    if category == "Education":
+        data = get_data(indicators_path="data/indicators/education.csv")
+        handpicked_indicators = pd.read_csv("data/indicators/education_handpicked.csv")
+    elif category == "Women's rights":
+        data = get_data(indicators_path="data/indicators/women.csv")
+        handpicked_indicators = pd.read_csv("data/indicators/wr_handpicked.csv")
+    elif category == "Economy":
+        data = get_data(indicators_path="data/indicators/economics.csv")
+        handpicked_indicators = pd.read_csv("data/indicators/eco_handpicked.csv")
+
     metadata = pd.read_csv("data/indicators/indicator_metadata.csv")
-    handpicked_indicators = pd.read_csv("data/indicators/education_handpicked.csv")
 
     # Only indicators for education with more than 40 data points in 2010:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
-    top_ed_indicators = handpicked_indicators["Indicator Name"]
-    data = data[data["Indicator Name"].isin(top_ed_indicators)]
+    top_indicators = handpicked_indicators["Indicator Name"]
+    data = data[data["Indicator Name"].isin(top_indicators)]
     ed_indicator = st.selectbox(
-        label="Education Indicator", options=data["Indicator Name"].unique(), index=1
+        label=category+" Indicator", options=data["Indicator Name"].unique(), index=0
     )
 
     indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
@@ -189,6 +199,7 @@ def plot_choropleth() -> None:
 
 
 def plot_scatter():
+    st.markdown("# Education in Africa")
     ed_data = get_data(indicators_path="data/indicators/education.csv")
     metadata = pd.read_csv("data/indicators/indicator_metadata.csv")
     education_handpicked = pd.read_csv("data/indicators/education_handpicked.csv")
@@ -309,8 +320,6 @@ def plot_scatter():
     else:
         st.markdown("### No data for that year!")
 
-
-st.markdown("# Education in Africa")
 option = st.sidebar.selectbox("Plot to render", ["map", "scatter"])
 
 if option == "scatter":
