@@ -38,6 +38,7 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_choropleth() -> None:
     data = get_data(indicators_path="data/indicators/education.csv")
+    metadata = pd.read_csv("data/indicators/indicator_metadata.csv")
     # Only indicators for education with more than 40 data points in 2010:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
     top_ed_indicators = data["Indicator Name"].value_counts()[:10].index
@@ -46,6 +47,12 @@ def plot_choropleth() -> None:
         label="Education Indicator", options=data["Indicator Name"].unique(), index=7
     )
 
+    indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
+    info = st.checkbox("info", value=True)
+    if info:
+        st.markdown("***Short definition: *** *" + str(indicator_metadata['Short definition'].item()) + "*")
+        st.markdown("***Long definition: *** *" + str(indicator_metadata['Long definition'].item()) + "*")
+
     olddata = data[data["Indicator Name"] == ed_indicator]
     data = (
         wide2long_format(data[data["Indicator Name"] == ed_indicator])
@@ -53,7 +60,6 @@ def plot_choropleth() -> None:
         .reset_index(drop=True)
     )
 
-    # min: 0h, max: 23h, default: 17h
     year_to_filter = st.slider("Year", 1960, 2019, 2010)
     filtered_data = data[data.Year.str.contains(str(year_to_filter))]
 
