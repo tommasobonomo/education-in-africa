@@ -37,15 +37,18 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_choropleth() -> None:
-    category = st.sidebar.selectbox("Data to visualize", ["Education", "Women's rights", "Economy"])
-    st.markdown("# "+category+" in Africa")
+    category = st.sidebar.selectbox(
+        "Data to visualize", ["Education", "Women's rights", "Economy"]
+    )
+    st.markdown("# " + category + " in Africa")
     if category == "Education":
         data = get_data(indicators_path="data/indicators/education.csv")
         handpicked_indicators = pd.read_csv("data/indicators/education_handpicked.csv")
     elif category == "Women's rights":
         data = get_data(indicators_path="data/indicators/women.csv")
         handpicked_indicators = pd.read_csv("data/indicators/wr_handpicked.csv")
-    elif category == "Economy":
+    else:
+        # category == "Economy":
         data = get_data(indicators_path="data/indicators/economics.csv")
         handpicked_indicators = pd.read_csv("data/indicators/eco_handpicked.csv")
 
@@ -56,15 +59,17 @@ def plot_choropleth() -> None:
     top_indicators = handpicked_indicators["Indicator Name"]
     data = data[data["Indicator Name"].isin(top_indicators)]
     ed_indicator = st.selectbox(
-        label=category+" Indicator", options=data["Indicator Name"].unique(), index=0
+        label=category + " Indicator", options=data["Indicator Name"].unique(), index=0
     )
 
     indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
     info = st.checkbox("info", value=True)
     if info:
         # st.write(ed_indicator)
-        # st.markdown("***Short definition: *** *" + str(indicator_metadata['Short definition'].item()) + "*")
-        st.markdown("***Definition: *** *" + str(indicator_metadata['Long definition'].item()) + "*")
+        # st.markdown("***Short definition: *** *" + indicator_metadata['Short definition'].values[0] + "*")
+        st.markdown(
+            f"***Definition: *** *{indicator_metadata['Long definition'].values[0]}*"
+        )
 
     olddata = data[data["Indicator Name"] == ed_indicator]
     data = (
@@ -83,7 +88,7 @@ def plot_choropleth() -> None:
     color_scheme = st.sidebar.selectbox(
         "Color scheme",
         ["yellowgreenblue", "greens", "yellowgreen", "redpurple", "goldgreen"],
-        index=4,
+        index=2,
     )
 
     african_countries = alt.topo_feature(
@@ -91,20 +96,18 @@ def plot_choropleth() -> None:
         "continent_Africa_subunits",
     )
 
-    map_selection = alt.selection_multi(fields=["properties.geounit"])
+    map_selection = alt.selection_multi(fields=["properties.geounit"], empty='none')
 
-    bar_color = alt.condition(
-        map_selection,
-        alt.Color("value:Q", scale=alt.Scale(scheme=color_scheme), legend=None),
-        alt.value("lightgrey"),
-    )
     bar_chart = (
         alt.Chart(african_countries)
         .mark_bar()
         .encode(
             x=alt.X("Country Code:O", sort="-y"),
             y=alt.Y("value:Q", title=ed_indicator),
-            color=bar_color,
+            color=alt.condition(
+                map_selection, 
+                alt.value("red"), 
+                alt.Color("value:Q", scale=alt.Scale(scheme=color_scheme), legend=None)),
             tooltip=[
                 alt.Tooltip("Country Code:O"),
                 alt.Tooltip("properties.geounit:O", title="Country Name"),
@@ -123,18 +126,19 @@ def plot_choropleth() -> None:
 
     color = alt.condition(
         map_selection,
+        alt.value("red"),
         alt.Color(
             "value:Q",
             scale=alt.Scale(scheme=color_scheme),
             legend=alt.Legend(title="Indicator value"),
-        ),
-        alt.value("lightgray"),
+        )
     )
 
     african_outline = (
         alt.Chart(african_countries)
-        .mark_geoshape(stroke="white", strokeWidth=2, fill="lightgrey")
+        .mark_geoshape(stroke="white", strokeWidth=2)
         .encode(
+            color=alt.condition(map_selection, alt.value("red"), alt.value("lightgrey")),
             tooltip=[
                 alt.Tooltip("properties.geounit:O", title="Country name"),
                 alt.Tooltip("value:Q", title="Indicator value"),
@@ -169,32 +173,32 @@ def plot_choropleth() -> None:
 
     columns = [
         str(year)
-        for year in range(max(year_to_filter - 5, 1960), min(year_to_filter + 6, 2019))
+        for year in range(1960,2020)
     ]
 
     trends = (
         alt.Chart(african_countries)
+        .transform_lookup(
+            lookup="properties.geounit",
+            from_=alt.LookupData(olddata, "Geo Name", columns),
+        )
+        .transform_fold(columns, as_=["Year", "value"])
         .mark_line(point=True)
         .encode(
-            x="Year:O",
-            y=alt.Y("value:Q", title="Indicator value"),
+            x=alt.X("year(Year):T", title="Year"),
+            y=alt.Y("value:Q", title="Indicator value"), # impute=alt.ImputeParams(method="mean", keyvals=columns)),
             color=alt.Color(
                 "properties.geounit:N", legend=alt.Legend(title="Selected Country")
             ),
             tooltip=[
                 alt.Tooltip("properties.geounit:O", title="Country name"),
+                alt.Tooltip("year(Year):T", title="Year"),
                 alt.Tooltip("value:Q", title="Indicator value"),
             ],
         )
-        .transform_lookup(
-            lookup="properties.geounit",
-            from_=alt.LookupData(olddata, "Country Name", columns),
-        )
-        .transform_fold(columns, as_=["Year", "value"])
         .properties(width=600, height=500)
-        .transform_filter(map_selection)
+        .transform_filter((map_selection))
     )
-
     st.write(bar_chart & africa & trends)
 
 
@@ -215,7 +219,7 @@ def plot_scatter():
     ed_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
     info_edu = st.checkbox("info", value=False, key="edu")
     if info_edu:
-        st.markdown("***Definition: *** *" + str(ed_metadata['Long definition'].item()) + "*")
+        st.markdown(f"***Definition: *** *{ed_metadata['Long definition'].values[0]}*")
 
     women_data = get_data(indicators_path="data/indicators/women.csv")
     women_data = wide2long_format(women_data).dropna()
@@ -226,9 +230,11 @@ def plot_scatter():
     )
     women_indicator_data = women_data[women_data["Indicator Name"] == women_indicator]
     women_metadata = metadata[metadata["Indicator Name"] == women_indicator]
-    info_women = st.checkbox("info", value=False , key="women")
+    info_women = st.checkbox("info", value=False, key="women")
     if info_women:
-        st.markdown("***Definition: *** *" + str(women_metadata['Long definition'].item()) + "*")
+        st.markdown(
+            f"***Definition: *** *{women_metadata['Long definition'].values[0]}*"
+        )
 
     eco_data = get_data(indicators_path="data/indicators/economics.csv")
     eco_data = wide2long_format(eco_data).dropna()
@@ -241,7 +247,7 @@ def plot_scatter():
     eco_metadata = metadata[metadata["Indicator Name"] == eco_indicator]
     info_eco = st.checkbox("info", value=False, key="eco")
     if info_eco:
-        st.markdown("***Definition: *** *" + str(eco_metadata['Long definition'].item()) + "*")
+        st.markdown(f"***Definition: *** *{eco_metadata['Long definition'].values[0]}*")
 
     year = str(st.slider("Year of interest", 1970, 2019, 2010))
     # year = st.selectbox(
@@ -319,6 +325,7 @@ def plot_scatter():
             )
     else:
         st.markdown("### No data for that year!")
+
 
 option = st.sidebar.selectbox("Plot to render", ["map", "scatter"])
 
