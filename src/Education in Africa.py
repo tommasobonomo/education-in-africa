@@ -46,7 +46,7 @@ def plot_choropleth() -> None:
     top_ed_indicators = handpicked_indicators["Indicator Name"]
     data = data[data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
-        label="Education Indicator", options=data["Indicator Name"].unique(), index=7
+        label="Education Indicator", options=data["Indicator Name"].unique(), index=1
     )
 
     indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
@@ -54,7 +54,7 @@ def plot_choropleth() -> None:
     if info:
         # st.write(ed_indicator)
         # st.markdown("***Short definition: *** *" + str(indicator_metadata['Short definition'].item()) + "*")
-        st.markdown("***Long definition: *** *" + str(indicator_metadata['Long definition'].item()) + "*")
+        st.markdown("***Definition: *** *" + str(indicator_metadata['Long definition'].item()) + "*")
 
     olddata = data[data["Indicator Name"] == ed_indicator]
     data = (
@@ -190,31 +190,47 @@ def plot_choropleth() -> None:
 
 def plot_scatter():
     ed_data = get_data(indicators_path="data/indicators/education.csv")
+    metadata = pd.read_csv("data/indicators/indicator_metadata.csv")
+    education_handpicked = pd.read_csv("data/indicators/education_handpicked.csv")
+    wr_handpicked = pd.read_csv("data/indicators/wr_handpicked.csv")
+    eco_handpicked = pd.read_csv("data/indicators/eco_handpicked.csv")
     ed_data = wide2long_format(ed_data).dropna()
-    top_ed_indicators = ed_data["Indicator Name"].value_counts()[:10].index
+    top_ed_indicators = education_handpicked["Indicator Name"]
     ed_data = ed_data[ed_data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
         label="Education Indicator", options=ed_data["Indicator Name"].unique(), index=6
     )
     ed_indicator_data = ed_data[ed_data["Indicator Name"] == ed_indicator]
+    ed_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
+    info_edu = st.checkbox("info", value=False, key="edu")
+    if info_edu:
+        st.markdown("***Definition: *** *" + str(ed_metadata['Long definition'].item()) + "*")
 
     women_data = get_data(indicators_path="data/indicators/women.csv")
     women_data = wide2long_format(women_data).dropna()
-    top_women_indicators = women_data["Indicator Name"].value_counts()[:10].index
+    top_women_indicators = wr_handpicked["Indicator Name"]
     women_data = women_data[women_data["Indicator Name"].isin(top_women_indicators)]
     women_indicator = st.selectbox(
         label="Women's rights Indicator", options=women_data["Indicator Name"].unique()
     )
     women_indicator_data = women_data[women_data["Indicator Name"] == women_indicator]
+    women_metadata = metadata[metadata["Indicator Name"] == women_indicator]
+    info_women = st.checkbox("info", value=False , key="women")
+    if info_women:
+        st.markdown("***Definition: *** *" + str(women_metadata['Long definition'].item()) + "*")
 
     eco_data = get_data(indicators_path="data/indicators/economics.csv")
     eco_data = wide2long_format(eco_data).dropna()
-    top_eco_indicators = eco_data["Indicator Name"].value_counts()[:10].index
+    top_eco_indicators = eco_handpicked["Indicator Name"]
     eco_data = eco_data[eco_data["Indicator Name"].isin(top_eco_indicators)]
     eco_indicator = st.selectbox(
         label="Economic Indicator", options=eco_data["Indicator Name"].unique(), index=6
     )
     eco_indicator_data = eco_data[eco_data["Indicator Name"] == eco_indicator]
+    eco_metadata = metadata[metadata["Indicator Name"] == eco_indicator]
+    info_eco = st.checkbox("info", value=False, key="eco")
+    if info_eco:
+        st.markdown("***Definition: *** *" + str(eco_metadata['Long definition'].item()) + "*")
 
     year = str(st.slider("Year of interest", 1970, 2019, 2010))
     # year = st.selectbox(
@@ -295,7 +311,7 @@ def plot_scatter():
 
 
 st.markdown("# Education in Africa")
-option = st.sidebar.selectbox("Plot to render", ["scatter", "map"])
+option = st.sidebar.selectbox("Plot to render", ["map", "scatter"])
 
 if option == "scatter":
     plot_scatter()
