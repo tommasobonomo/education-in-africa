@@ -88,7 +88,7 @@ def plot_choropleth() -> None:
     color_scheme = st.sidebar.selectbox(
         "Color scheme",
         ["yellowgreenblue", "greens", "yellowgreen", "redpurple", "goldgreen"],
-        index=2,
+        index=1,
     )
 
     african_countries = alt.topo_feature(
@@ -176,6 +176,7 @@ def plot_choropleth() -> None:
         for year in range(1960,2020)
     ]
 
+    pan_selection = alt.selection_interval(bind="scales", encodings=["x"])
     trends = (
         alt.Chart(african_countries)
         .transform_lookup(
@@ -185,7 +186,7 @@ def plot_choropleth() -> None:
         .transform_fold(columns, as_=["Year", "value"])
         .mark_line(point=True)
         .encode(
-            x=alt.X("year(Year):T", title="Year"),
+            x=alt.X("year(Year):T", title="Year", scale=alt.Scale(domain=(1960,2019))),
             y=alt.Y("value:Q", title="Indicator value"), # impute=alt.ImputeParams(method="mean", keyvals=columns)),
             color=alt.Color(
                 "properties.geounit:N", legend=alt.Legend(title="Selected Country")
@@ -197,7 +198,8 @@ def plot_choropleth() -> None:
             ],
         )
         .properties(width=600, height=500)
-        .transform_filter((map_selection))
+        .transform_filter(map_selection)
+        .add_selection(pan_selection)
     )
     st.write(bar_chart & africa & trends)
 
