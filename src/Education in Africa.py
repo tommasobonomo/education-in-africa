@@ -60,10 +60,12 @@ def plot_choropleth() -> None:
     data = data[data["Indicator Name"].isin(top_indicators)]
     if category == "Education":
         defaulttindex=16
-    if category == "Women's rights":
+    elif category == "Women's rights":
         defaulttindex=0
-    if category == "Economy":
+    elif category == "Economy":
         defaulttindex=9
+    else:
+        defaulttindex=0
 
     ed_indicator = st.selectbox(
         label=category + " Indicator", options=data["Indicator Name"].unique(), index=defaulttindex
