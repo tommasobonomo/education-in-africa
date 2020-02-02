@@ -38,7 +38,7 @@ def wide2long_format(df: pd.DataFrame) -> pd.DataFrame:
 
 def plot_choropleth() -> None:
     category = st.sidebar.selectbox(
-        "Data to visualize", ["Education", "Women's rights", "Economy"]
+        "Data to visualize", ["Education", "Economy", "Women's rights"]
     )
     st.markdown("# " + category + " in Africa")
     if category == "Education":
@@ -58,8 +58,15 @@ def plot_choropleth() -> None:
     # ['SE.COM.DURS','SE.PRM.DURS','SE.PRM.AGES','SE.PRE.DURS','SE.SEC.DURS','SE.SEC.AGES']
     top_indicators = handpicked_indicators["Indicator Name"]
     data = data[data["Indicator Name"].isin(top_indicators)]
+    if category == "Education":
+        defaulttindex=16
+    if category == "Women's rights":
+        defaulttindex=0
+    if category == "Economy":
+        defaulttindex=9
+
     ed_indicator = st.selectbox(
-        label=category + " Indicator", options=data["Indicator Name"].unique(), index=0
+        label=category + " Indicator", options=data["Indicator Name"].unique(), index=defaulttindex
     )
 
     indicator_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
@@ -215,13 +222,27 @@ def plot_scatter():
     top_ed_indicators = education_handpicked["Indicator Name"]
     ed_data = ed_data[ed_data["Indicator Name"].isin(top_ed_indicators)]
     ed_indicator = st.selectbox(
-        label="Education Indicator", options=ed_data["Indicator Name"].unique(), index=6
+        label="Education Indicator", options=ed_data["Indicator Name"].unique(), index=1
     )
     ed_indicator_data = ed_data[ed_data["Indicator Name"] == ed_indicator]
     ed_metadata = metadata[metadata["Indicator Name"] == ed_indicator]
     info_edu = st.checkbox("info", value=False, key="edu")
     if info_edu:
         st.markdown(f"***Definition: *** *{ed_metadata['Long definition'].values[0]}*")
+
+
+    eco_data = get_data(indicators_path="data/indicators/economics.csv")
+    eco_data = wide2long_format(eco_data).dropna()
+    top_eco_indicators = eco_handpicked["Indicator Name"]
+    eco_data = eco_data[eco_data["Indicator Name"].isin(top_eco_indicators)]
+    eco_indicator = st.selectbox(
+        label="Economic Indicator", options=eco_data["Indicator Name"].unique(), index=20
+    )
+    eco_indicator_data = eco_data[eco_data["Indicator Name"] == eco_indicator]
+    eco_metadata = metadata[metadata["Indicator Name"] == eco_indicator]
+    info_eco = st.checkbox("info", value=False, key="eco")
+    if info_eco:
+        st.markdown(f"***Definition: *** *{eco_metadata['Long definition'].values[0]}*")
 
     women_data = get_data(indicators_path="data/indicators/women.csv")
     women_data = wide2long_format(women_data).dropna()
@@ -238,18 +259,6 @@ def plot_scatter():
             f"***Definition: *** *{women_metadata['Long definition'].values[0]}*"
         )
 
-    eco_data = get_data(indicators_path="data/indicators/economics.csv")
-    eco_data = wide2long_format(eco_data).dropna()
-    top_eco_indicators = eco_handpicked["Indicator Name"]
-    eco_data = eco_data[eco_data["Indicator Name"].isin(top_eco_indicators)]
-    eco_indicator = st.selectbox(
-        label="Economic Indicator", options=eco_data["Indicator Name"].unique(), index=6
-    )
-    eco_indicator_data = eco_data[eco_data["Indicator Name"] == eco_indicator]
-    eco_metadata = metadata[metadata["Indicator Name"] == eco_indicator]
-    info_eco = st.checkbox("info", value=False, key="eco")
-    if info_eco:
-        st.markdown(f"***Definition: *** *{eco_metadata['Long definition'].values[0]}*")
 
     year = str(st.slider("Year of interest", 1970, 2019, 2010))
     # year = st.selectbox(
@@ -284,7 +293,8 @@ def plot_scatter():
         brush = alt.selection_interval()  # selection of type "interval"
         color = alt.condition(brush, alt.value("teal"), alt.value("lightgray"))
         chart_base = (
-            alt.Chart(plot_data).mark_point(size=80).properties(height=400, width=600)
+            alt.Chart(plot_data).mark_point(size=80)
+                .properties(height=500, width=680)
         )
         chart = chart_base.encode(
             x=alt.X("value_women", title=women_indicator, type=type_women),
@@ -318,22 +328,24 @@ def plot_scatter():
         if b:
             st.altair_chart(
                 alt.vconcat(chart.add_selection(brush) + polynomial_fit)
-                & alt.vconcat(chart2.add_selection(brush) + polynomial_fit2)
+                | alt.vconcat(chart2.add_selection(brush) + polynomial_fit2),
+                use_container_width=True
             )
         else:
             st.altair_chart(
                 alt.vconcat(chart.add_selection(brush))
-                & alt.vconcat(chart2.add_selection(brush))
+                | alt.vconcat(chart2.add_selection(brush)),
+                use_container_width=True
             )
     else:
         st.markdown("### No data for that year!")
 
 
-option = st.sidebar.selectbox("Plot to render", ["map", "scatter"])
+option = st.sidebar.selectbox("Plot to render", ["Analysis of an Indicator", "Interaction of Indicators"])
 
-if option == "scatter":
+if option == "Interaction of Indicators":
     plot_scatter()
-elif option == "map":
+elif option == "Analysis of an Indicator":
     plot_choropleth()
 else:
     st.write("### Sorry! Plot not yet implemented")
